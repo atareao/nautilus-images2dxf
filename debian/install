@@ -1,0 +1,3 @@
+src/nautilus-convert2dxf.py /usr/share/nautilus-python/extensions
+src/gpx2dxfutils/* /usr/share/nautilus-python/extensions/gpx2dxfutils
+data/nautilus-convert2dxf.svg /usr/share/icons/gnome/scalable/apps

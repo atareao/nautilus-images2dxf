@@ -1,0 +1,18 @@
+nautilus-convert2dxf
+===========
+
+nautilus-convert2dxf
+
+Download
+--------
+
+Download the [package][dlp] *or* checkout the source:
+
+    $ git clone https://github.com/atareao/nautilus-convert2dxf.git
+
+Installation
+------------
+
+    $ sudo add-apt-repositoy ppa:atareao/nautilus-extensions
+    $ sudo apt-get update
+    $ sudo apt-get install nautilus-convert2dxf
