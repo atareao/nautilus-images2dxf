@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This file is part of nautilus-images2dxf
@@ -34,7 +34,6 @@ from gi.repository import Gtk
 from gi.repository import GLib
 from gi.repository import GExiv2
 from gi.repository import Nautilus as FileManager
-from images2dxfutils import images2dxfapi
 import os
 from threading import Thread
 from urllib import unquote_plus
@@ -224,7 +223,9 @@ def select_output_filename(window):
     filter = Gtk.FileFilter()
     filter.set_name('dxf file')
     filter.add_mime_type('application/dxf')
+    filter.add_pattern('*.dxf')
     dialog.add_filter(filter)
+    dialog.set_current_folder(os.getenv('HOME'))
     if dialog.run() == Gtk.ResponseType.ACCEPT:
         dialog.hide()
         output_filename = dialog.get_filename()
@@ -341,7 +342,7 @@ if __name__ == '__main__':
     import glob
     output_filename = select_output_filename(None)
     if output_filename is not None:
-        files = glob.glob('~/Escritorio/FOTOS/*.jpg')
+        files = glob.glob('/home/lorenzo/Escritorio/FOTOS2/*.jpg')
         print(files)
         # files = get_files(selected)
         diib = DoItInBackground(output_filename, files)

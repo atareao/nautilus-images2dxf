@@ -1,16 +1,8 @@
-nautilus-images2dxf (0.3.1-0extras16.04.0) xenial; urgency=medium
-
-  * Added .dxf pattern
-  * Added home directory
-  * Fixed a bug with dependencies
-
- -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Mon, 13 Mar 2017 21:10:53 +0100
-
-nautilus-images2dxf (0.3.0-0extras16.04.1) xenial; urgency=medium
+nautilus-images2dxf (0.3.0-0extras16.04.0) xenail; urgency=medium
 
   * Convert to utm with https://github.com/Turbo87/utm
 
- -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Mon, 13 Mar 2017 17:07:49 +0100
+ -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Mon, 13 Mar 2017 16:38:14 +0100
 
 nautilus-images2dxf (0.2.0-0extras16.04.0) xenial; urgency=medium
 
