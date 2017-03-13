@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This file is part of nautilus-convert2dxf
+# This file is part of nautilus-images2dxf
 #
 # Copyright (C) 2012-2016 Lorenzo Carbonell
 # lorenzo.carbonell.cerezo@gmail.com
@@ -25,24 +25,27 @@ import gi
 try:
     gi.require_version('Gtk', '3.0')
     gi.require_version('Nautilus', '3.0')
+    gi.require_version('GExiv2', '0.10')
 except Exception as e:
     print(e)
     exit(-1)
-
-import os
-from threading import Thread
-from urllib import unquote_plus
 from gi.repository import GObject
 from gi.repository import Gtk
 from gi.repository import GLib
+from gi.repository import GExiv2
 from gi.repository import Nautilus as FileManager
-from gpx2dxfutils import gpx2dxfapi
+from images2dxfutils import images2dxfapi
+import os
+from threading import Thread
+from urllib import unquote_plus
+import mimetypes
+import images2dxfutils
+from images2dxfutils import sdxf
+import utm
 
-APPNAME = 'nautilus-convert2dxf'
-ICON = 'nautilus-convert2dxf'
-VERSION = '0.4.0'
+APP = '$APP$'
+VERSION = '$VERSION$'
 
-EXTENSIONS_FROM = ['.gpx']
 _ = str
 
 
@@ -66,10 +69,11 @@ class DoItInBackground(IdleObject, Thread):
         'end_one': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (float,)),
     }
 
-    def __init__(self, elements):
+    def __init__(self, output_filename, elements):
         IdleObject.__init__(self)
         Thread.__init__(self)
         self.elements = elements
+        self.output_filename = output_filename
         self.stopit = False
         self.ok = True
         self.daemon = True
@@ -87,14 +91,27 @@ class DoItInBackground(IdleObject, Thread):
         self.emit('started', total)
         try:
             total = 0
+            drawing = images2dxfutils.sdxf.Drawing()
             for element in self.elements:
                 if self.stopit is True:
                     self.ok = False
                     break
                 self.emit('start_one', element)
-                gpx2dxfapi.from_gpx_to_dxf(element)
+                if os.path.exists(element) and os.path.isfile(element):
+                    filename = os.path.basename(element)
+                    exif = GExiv2.Metadata(element)
+                    coordinates = exif.get_gps_info()
+                    x, y, h, lt = utm.from_latlon(coordinates[1],
+                                                  coordinates[0])
+                    drawing.append(sdxf.Circle(center=(x, y, 0),
+                                   radius=0.5, color=3))
+                    drawing.append(sdxf.Text(filename, point=(x, y, 0)))
                 self.emit('end_one', get_duration(element))
+            print(1)
+            drawing.saveas(self.output_filename)
+            print(2)
         except Exception as e:
+            print(e)
             self.ok = False
         try:
             if self.process is not None:
@@ -102,6 +119,7 @@ class DoItInBackground(IdleObject, Thread):
                 self.process = None
         except Exception as e:
             print(e)
+        print('finished')
         self.emit('ended', self.ok)
 
 
@@ -180,18 +198,43 @@ class Progreso(Gtk.Dialog, IdleObject):
         self.label.set_text(_('Converting: %s') % element)
 
 
-def get_output_filename(file_in):
-    head, tail = os.path.split(file_in)
-    root, ext = os.path.splitext(tail)
-    file_out = os.path.join(head, root+'.dxf')
-    return file_out
+def get_files(files_in):
+    files = []
+    for file_in in files_in:
+        print(file_in)
+        file_in = unquote_plus(file_in.get_uri()[7:])
+        if os.path.isfile(file_in):
+            files.append(file_in)
+    return files
 
 
 def get_duration(file_in):
     return os.path.getsize(file_in)
 
 
-class DXFConverterMenuProvider(GObject.GObject, FileManager.MenuProvider):
+def select_output_filename(window):
+    output_filename = None
+    dialog = Gtk.FileChooserDialog('Select dxf output file',
+                                   window,
+                                   Gtk.FileChooserAction.SAVE,
+                                   (Gtk.STOCK_CANCEL,
+                                    Gtk.ResponseType.REJECT,
+                                    Gtk.STOCK_OK, Gtk.ResponseType.ACCEPT))
+    dialog.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
+    filter = Gtk.FileFilter()
+    filter.set_name('dxf file')
+    filter.add_mime_type('application/dxf')
+    dialog.add_filter(filter)
+    if dialog.run() == Gtk.ResponseType.ACCEPT:
+        dialog.hide()
+        output_filename = dialog.get_filename()
+        if not output_filename.endswith('.dxf'):
+            output_filename += '.dxf'
+    dialog.destroy()
+    return output_filename
+
+
+class Images2dxfCreatorMenuProvider(GObject.GObject, FileManager.MenuProvider):
     """
     Implements the 'Replace in Filenames' extension to the File Manager\
     right-click menu
@@ -202,27 +245,32 @@ class DXFConverterMenuProvider(GObject.GObject, FileManager.MenuProvider):
         File Manager crashes if a plugin doesn't implement the __init__\
         method
         """
+        mimetypes.init()
         pass
 
-    def all_files_are_gpx(self, items):
+    def all_are_jpeg_files(self, items):
         for item in items:
-            fileName, fileExtension = os.path.splitext(
-                unquote_plus(item.get_uri()[7:]))
-            if fileExtension.lower() in EXTENSIONS_FROM:
-                return True
-        return False
+            file_in = unquote_plus(item.get_uri()[7:])
+            if not os.path.isfile(file_in):
+                return False
+            mimetype = mimetypes.guess_type('file://' + file_in)[0]
+            if mimetype != 'image/jpeg':
+                return False
+        return True
 
     def convert(self, menu, selected, window):
-        files = get_files(selected)
-        diib = DoItInBackground(files)
-        progreso = Progreso(_('Convert to dxf'), window)
-        diib.connect('started', progreso.set_max_value)
-        diib.connect('start_one', progreso.set_element)
-        diib.connect('end_one', progreso.increase)
-        diib.connect('ended', progreso.close)
-        progreso.connect('i-want-stop', diib.stop)
-        diib.start()
-        progreso.run()
+        output_filename = select_output_filename(window)
+        if output_filename is not None:
+            files = get_files(selected)
+            diib = DoItInBackground(output_filename, files)
+            progreso = Progreso(_('Creating dxf'), window)
+            diib.connect('started', progreso.set_max_value)
+            diib.connect('start_one', progreso.set_element)
+            diib.connect('end_one', progreso.increase)
+            diib.connect('ended', progreso.close)
+            progreso.connect('i-want-stop', diib.stop)
+            diib.start()
+            progreso.run()
 
     def get_file_items(self, window, sel_items):
         """
@@ -230,25 +278,25 @@ class DXFConverterMenuProvider(GObject.GObject, FileManager.MenuProvider):
         right-click menu, connects its 'activate' signal to the 'run'\
         method passing the selected Directory/File
         """
-        if self.all_files_are_gpx(sel_items):
+        if self.all_are_jpeg_files(sel_items):
             top_menuitem = FileManager.MenuItem(
-                name='DXFConverterMenuProvider::Gtk-convert2dxf-top',
-                label=_('Convert to dxf'),
-                tip=_('Tool to convert to dxf'))
+                name='Images2dxfCreatorMenuProvider::Gtk-images2dxf-top',
+                label=_('Create dxf from images'),
+                tip=_('Tool to create a dxf from jpeg images'))
             submenu = FileManager.Menu()
             top_menuitem.set_submenu(submenu)
 
             sub_menuitem_00 = FileManager.MenuItem(
-                name='DXFConverterMenuProvider::Gtk-convert2dxf-sub-01',
-                label=_('Convert'),
-                tip=_('Tool to convert to dxf'))
+                name='Images2dxfCreatorMenuProvider::Gtk-images2dxf-sub-01',
+                label=_('Create dxf'),
+                tip=_('Tool to create a dxf from jpeg images'))
             sub_menuitem_00.connect('activate',
                                     self.convert,
                                     sel_items,
                                     window)
             submenu.append_item(sub_menuitem_00)
             sub_menuitem_01 = FileManager.MenuItem(
-                name='DXFConverterMenuProvider::Gtk-convert2dxf-sub-02',
+                name='Images2dxfCreatorMenuProvider::Gtk-images2dxf-sub-02',
                 label=_('About'),
                 tip=_('About'))
             sub_menuitem_01.connect('activate', self.about, window)
@@ -259,10 +307,10 @@ class DXFConverterMenuProvider(GObject.GObject, FileManager.MenuProvider):
 
     def about(self, widget, window):
         ad = Gtk.AboutDialog(parent=window)
-        ad.set_name(APPNAME)
+        ad.set_name(APP)
         ad.set_version(VERSION)
-        ad.set_copyright('Copyrignt (c) 2016\nLorenzo Carbonell')
-        ad.set_comments(APPNAME)
+        ad.set_copyright('Copyrignt (c) 2017\nLorenzo Carbonell')
+        ad.set_comments(APP)
         ad.set_license('''
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -282,7 +330,27 @@ this program. If not, see <http://www.gnu.org/licenses/>.
             'Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>'])
         ad.set_documenters([
             'Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>'])
-        ad.set_icon_name(ICON)
-        ad.set_logo_icon_name(APPNAME)
+        ad.set_icon_name(APP)
+        ad.set_logo_icon_name(APP)
         ad.run()
         ad.destroy()
+
+
+if __name__ == '__main__':
+    import time
+    import glob
+    output_filename = select_output_filename(None)
+    if output_filename is not None:
+        files = glob.glob('~/Escritorio/FOTOS/*.jpg')
+        print(files)
+        # files = get_files(selected)
+        diib = DoItInBackground(output_filename, files)
+        progreso = Progreso(_('Creating dxf'), None)
+        diib.connect('started', progreso.set_max_value)
+        diib.connect('start_one', progreso.set_element)
+        diib.connect('end_one', progreso.increase)
+        diib.connect('ended', progreso.close)
+        progreso.connect('i-want-stop', diib.stop)
+        diib.start()
+        progreso.run()
+        time.sleep(5)

@@ -1,10 +1,22 @@
-nautilus-convert2dxf (0.2.0-0extras14.04.0) trusty; urgency=medium
+nautilus-images2dxf (0.3.0-0extras16.04.0) xenail; urgency=medium
+
+  * Convert to utm with https://github.com/Turbo87/utm
+
+ -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Mon, 13 Mar 2017 16:38:14 +0100
+
+nautilus-images2dxf (0.2.0-0extras16.04.0) xenial; urgency=medium
+
+  * Fixed bugs
+
+ -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Mon, 13 Mar 2017 15:48:16 +0100
+
+nautilus-images2dxf (0.1.0-0extras16.04.0) xenial; urgency=medium
 
   * Ported to Trusty
 
- -- Lorenzo Carbonell <atareao@trusty>  Sun, 09 Mar 2014 20:32:14 +0100
+ -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Mon, 13 Mar 2017 08:33:04 +0100
 
-nautilus-convert2dxf (0.2.0-0extras13.04.0) raring; urgency=low
+nautilus-images2dxf (0.1.0-0extras13.04.0) raring; urgency=low
 
   * Fixed a bug with gpx parsing
   * Migrated to Python3
@@ -12,13 +24,13 @@ nautilus-convert2dxf (0.2.0-0extras13.04.0) raring; urgency=low
 
  -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Sun, 02 Jun 2013 21:46:25 +0200
 
-nautilus-convert2dxf (0.0.1.1-1ubuntu1) precise; urgency=low
+nautilus-images2dxf (0.0.1.1-1ubuntu1) precise; urgency=low
 
   * Fixed a bug with gpx parsing
 
  -- Lorenzo Carbonell <lorenzo.carbonell.cerezo@gmail.com>  Sun, 26 Feb 2012 12:02:53 +0100
 
-nautilus-convert2dxf (0.0.1.0-1ubuntu1) precise; urgency=low
+nautilus-images2dxf (0.0.1.0-1ubuntu1) precise; urgency=low
 
   * First release
 

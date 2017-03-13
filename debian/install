@@ -1,3 +1,4 @@
-src/nautilus-convert2dxf.py /usr/share/nautilus-python/extensions
-src/gpx2dxfutils/* /usr/share/nautilus-python/extensions/gpx2dxfutils
-data/nautilus-convert2dxf.svg /usr/share/icons/gnome/scalable/apps
+src/nautilus-images2dxf.py /usr/share/nautilus-python/extensions
+src/images2dxfutils/* /usr/share/nautilus-python/extensions/images2dxfutils
+src/utm/* /usr/share/nautilus-python/extensions/utm
+data/nautilus-images2dxf.svg /usr/share/icons/gnome/scalable/apps
